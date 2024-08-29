@@ -1,0 +1,75 @@
+---
+title: "776_Project1"
+author: "MATEO BANDALA-JACQUES"
+date: "2024-08-29"
+output: html_document
+---
+
+```{r setup, include=TRUE}
+#Load the require packages
+library(tidyverse, quietly = TRUE)
+library(tidytuesdayR)
+library(here)
+
+
+#Create a repository to save the data locally
+if (!file.exists(here("data", "chocolate.RDS"))) {
+    url_csv <- "https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-18/chocolate.csv"
+    chocolate <- readr::read_csv(url_csv)
+
+    # save the file to RDS objects
+    saveRDS(chocolate, file = here("data", "chocolate.RDS"))
+}
+
+#load the data
+chocolate <- readRDS(here("data", "chocolate.RDS"))
+
+#Look at the data
+as_tibble(chocolate)
+
+
+#glimpse at the data
+glimpse(chocolate)
+
+
+```
+
+## *Part 1: Explore the data*
+
+```{r 1.1}
+
+#Make a histogram of the rating scores
+
+chocolate %>%
+  ggplot(aes(x=rating)) +
+  geom_histogram(bins = 15) +
+  labs(
+    title = "Distribution of Chocolate Ratings",
+    x = "Rating",
+    y = "Count"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title = element_text(face = "bold")
+  )
+
+```
+Changing the number of bins changes the total number of 'bars'. I picked a binwidth of 15 because there is a 
+low range in values (since they are discrete)
+
+
+2.- Consider the countries where the beans originated from. How many reviews come from each country of bean origin?
+
+```{r 1.2}
+
+#Consider the countries where the beans originated from. 
+
+table(chocolate$country_of_bean_origin)
+
+
+
+
+
+
+```
