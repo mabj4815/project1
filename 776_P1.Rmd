@@ -55,9 +55,8 @@ chocolate %>%
   )
 
 ```
-Solution: Changing the number of bins changes the total number of 'bars'. I picked a binwidth of 15 because there is a 
-low range in values (since they are discrete)
 
+Solution: Changing the number of bins changes the total number of 'bars'. I picked a binwidth of 15 because there is a low range in values (since they are discrete)
 
 2.- Consider the countries where the beans originated from. How many reviews come from each country of bean origin?
 
@@ -68,9 +67,8 @@ low range in values (since they are discrete)
 table(chocolate$country_of_bean_origin)
 
 ```
+
 Solution: I don't understand this prompt
-
-
 
 3.- What is average rating scores from reviews of chocolate bars that have Ecuador as country_of_bean_origin in this dataset? For this same set of reviews, also calculate (1) the total number of reviews and (2) the standard deviation of the rating scores. Your answer should be a new data frame with these three summary statistics in three columns. Label the name of these columns mean, sd, and total.
 
@@ -83,12 +81,10 @@ chocolate %>%
             total=n())
 
 ```
+
 Solution: Please see above tibbles.
 
-
-
 4.- Which company (name) makes the best chocolate (or has the highest ratings on average) with beans from Ecuador?
-
 
 ```{r 1.4}
 
@@ -103,7 +99,6 @@ chocolate %>%
 
 Solution: Amano, Benoit Nihant, Beschle, Durci and the Smooth Chocolator all have the highest average rating, at 4.0
 
-
 5.- Calculate the average rating across all country of origins for beans. Which top 3 countries (for bean origin) have the highest ratings on average?
 
 ```{r 1.5}
@@ -116,7 +111,6 @@ chocolate %>%
 ```
 
 Solution: Tobago, China and Sao Tome & Principe
-
 
 6.- Following up on the previous problem, now remove any countries of bean origins that have less than 10 chocolate bar reviews. Now, which top 3 countries have the highest ratings on average?
 
@@ -131,12 +125,9 @@ chocolate %>%
 
 ```
 
-
 Solution: It is now Solomon Islands, Congo and Cuba
 
-
 7.- For this last part, let’s explore the relationship between percent chocolate and ratings.
-
 
 ```{r 1.7}
 
@@ -191,5 +182,188 @@ chocolate %>% group_by(cocoa_percent_cat) %>% summarise(mean=mean(rating,na.rm=T
 
 ```
 
+Solution: On average, category i is the highest rated
 
-Solution: On average, category i is the higest rated
+## *Part 2: Join two datasets together*
+
+2.1 Use this dataset it to create a new column called continent in our chocolate dataset that contains the continent name for each review where the country of bean origin is.
+
+```{r 2.1}
+
+library(gapminder)
+head(gapminder)
+
+
+chocolate <- readRDS(here("data", "chocolate.RDS"))
+
+gapminder <- gapminder %>%
+  select(country, continent) %>%
+  group_by(country) %>%
+  slice_head() %>%
+  ungroup()
+
+chocolate <- left_join(chocolate, gapminder, by=c("country_of_bean_origin" = "country"))
+
+
+table(chocolate$continent)
+
+```
+
+2.2 Only keep reviews that have reviews from countries of bean origin with at least 10 reviews.
+
+```{r 2.2}
+chocolate <- chocolate %>%
+  group_by(country_of_bean_origin) %>%
+  filter(n()>=10) %>%
+  ungroup()
+
+```
+
+2.3 Also, remove the country of bean origin named "Blend".
+
+```{r 2.3}
+
+chocolate <- chocolate %>%
+  filter(country_of_bean_origin!="Blend")
+
+
+```
+
+Make a set of violin plots with ratings on the y-axis and continents on the x-axis. Hint:
+
+Check to see if there are any NAs in the new column. If there are any NAs, add the continent name for each row.
+
+```{r 2.4}
+
+chocolate %>% 
+  filter(is.na(continent)) %>%
+  group_by(country_of_bean_origin) %>%
+  summarise(n=n())
+
+Americas <- c("Belize", "Grenada", "St. Lucia", "Trinidad", "U.S.A." )
+Africa <- c("Congo", "Sao Tome")
+Oceania <- c("Fiji", "Papua New Guinea", "Solomon Islands", "Vanuatu")
+
+
+chocolate$continent[chocolate$country_of_bean_origin %in% Americas] <- "Americas"
+chocolate$continent[chocolate$country_of_bean_origin %in% Africa] <- "Africa"
+chocolate$continent[chocolate$country_of_bean_origin %in% Oceania] <- "Oceania"
+
+
+
+chocolate %>%
+  ggplot(aes(x=continent, y=rating, color=continent))+
+  geom_violin() +
+  labs(x="Continent", y="Rating", color="")
+
+```
+
+## **Part 3: Convert wide data into long data**
+
+## **Part 5: Make the worst plot you can**
+
+```{r 5}
+library(png)
+library(grid)
+
+
+cat <- readPNG(here("data", "cat.png"))
+cat_fig <- rasterGrob(cat, width = unit(4, "cm"), height = unit(4, "cm"))
+
+
+
+ggplot(chocolate, aes(x = country_of_bean_origin, y = rating)) +
+  geom_point(size = 10, shape = 17, color = "purple", fill = "yellow", alpha = 0.9) +  
+  theme(
+    axis.title.x = element_text(size = 20, face = "italic", color = "cyan", angle = 180),  
+    axis.title.y = element_text(size = 20, face = "bold", color = "blue", angle = 90),  
+    axis.text.x = element_text(size = 15, angle = 60, hjust = 1, color = "purple"),  
+    axis.text.y = element_text(size = 15, color = "green", angle = 45), 
+    plot.title = element_text(size = 25, face = "bold.italic", hjust = 0.5, vjust = -5, color = "yellow"),  
+    legend.position = "top" ) +
+  labs(x="Yes") +
+  annotation_custom(cat_fig) +
+  coord_flip()+
+  ggtitle("Plot") 
+
+
+
+
+```
+
+Here is how I customized my plot:
+
+-   I changed the size and shape of the points, which could be used for emphasis
+
+-   I changed the size, face, colour and angle of the X axis, which helps visualize the plot
+
+-   I changed the Y axis title, face, and color, for similar reason
+
+-   I rotated the X axis text, as in, the countries (this one is actually useful)
+
+-   I changed the position of the legend, which may help reduce cluuter
+
+-   I added a cute kitten to help with anxiety
+
+- I rotated the plot 90 degrees for clarity
+
+## **Part 6: Make my plot a better plot**
+
+```{r 6}
+library(patchwork)
+library(jpeg)
+
+#Original
+a<- chocolate %>%
+    ggplot(aes(
+        x = as.factor(review_date),
+        y = rating,
+        fill = review_date
+    )) +
+    geom_violin()
+
+
+# Mateo's version
+
+beach <- readJPEG(here("data", "beach2.jpg"))
+
+beach_grob <- rasterGrob(beach, 
+                              width = unit(1, "npc"), 
+                              height = unit(1, "npc"), interpolate=TRUE)
+
+b<- chocolate %>%
+    ggplot(aes(x = as.factor(review_date), y = rating, fill = as.factor(review_date))) +
+  annotation_custom(beach_grob, xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf)  +
+  geom_hline(yintercept = seq(1, 4, by = 0.5), color = "black", size = 0.3, linetype = "solid") + 
+          geom_violin(alpha=0.8, color="black", show.legend = FALSE) +
+       labs(x= "Year of review", y="Rating", fill="Review date")+
+  theme(axis.text.x = element_text(size = 10, angle = 60, hjust = 1, face="bold")) +
+  ggtitle("Violin plot of rating by year")
+
+
+a + b
+
+
+
+
+
+```
+
+
+```{r session info}
+library(sessioninfo)
+
+options(width = 120)
+sessioninfo::session_info()
+
+```
+
+How I improved the plot:
+
+-  I rotated and bolded the X axis ticks
+-  I changed the names of the X and y axis
+-  I changed the fill of the violin (this has no purpose other than aesthetics)
+-  I added thick outlines to each of the plots 
+-  I added a calming tropical beach to the background
+-  I added a title 
+-  I added black horizontal lines for ease of visualization
