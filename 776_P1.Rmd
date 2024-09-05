@@ -55,7 +55,7 @@ chocolate %>%
   )
 
 ```
-Changing the number of bins changes the total number of 'bars'. I picked a binwidth of 15 because there is a 
+Solution: Changing the number of bins changes the total number of 'bars'. I picked a binwidth of 15 because there is a 
 low range in values (since they are discrete)
 
 
@@ -67,9 +67,129 @@ low range in values (since they are discrete)
 
 table(chocolate$country_of_bean_origin)
 
+```
+Solution: I don't understand this prompt
 
 
 
+3.- What is average rating scores from reviews of chocolate bars that have Ecuador as country_of_bean_origin in this dataset? For this same set of reviews, also calculate (1) the total number of reviews and (2) the standard deviation of the rating scores. Your answer should be a new data frame with these three summary statistics in three columns. Label the name of these columns mean, sd, and total.
+
+```{r 1.3}
+
+chocolate %>%
+  filter(country_of_bean_origin=="Ecuador") %>%
+  summarize(mean= mean(rating, na.rm=TRUE),
+            sd = sd(rating, na.rm=TRUE),
+            total=n())
+
+```
+Solution: Please see above tibbles.
+
+
+
+4.- Which company (name) makes the best chocolate (or has the highest ratings on average) with beans from Ecuador?
+
+
+```{r 1.4}
+
+chocolate %>%
+  filter(country_of_bean_origin=="Ecuador") %>%
+  group_by(company_manufacturer) %>%
+  summarize(mean=mean(rating, na.rm=TRUE)) %>%
+  arrange(desc(mean))
 
 
 ```
+
+Solution: Amano, Benoit Nihant, Beschle, Durci and the Smooth Chocolator all have the highest average rating, at 4.0
+
+
+5.- Calculate the average rating across all country of origins for beans. Which top 3 countries (for bean origin) have the highest ratings on average?
+
+```{r 1.5}
+
+chocolate %>%
+  group_by(country_of_bean_origin) %>%
+  summarise(mean_rating = mean(rating, na.rm=TRUE)) %>%
+  arrange(desc(mean_rating))
+
+```
+
+Solution: Tobago, China and Sao Tome & Principe
+
+
+6.- Following up on the previous problem, now remove any countries of bean origins that have less than 10 chocolate bar reviews. Now, which top 3 countries have the highest ratings on average?
+
+```{r 1.6}
+
+
+chocolate %>%
+  group_by(country_of_bean_origin) %>%
+  filter(n()>=10)%>%
+  summarise(mean_rating = mean(rating, na.rm=TRUE), n=n()) %>%
+  arrange(desc(mean_rating))
+
+```
+
+
+Solution: It is now Solomon Islands, Congo and Cuba
+
+
+7.- For this last part, let’s explore the relationship between percent chocolate and ratings.
+
+
+```{r 1.7}
+
+
+# 1Identify the countries of bean origin with at least 50 reviews. Remove reviews from countries are not in this list.
+
+chocolate <- chocolate %>%
+  group_by(country_of_bean_origin) %>%
+  filter(n()>=50) %>%
+  ungroup()
+
+
+
+# Using the variable describing the chocolate percentage for each review, create a new column that groups chocolate  percentages into one of four groups: (i) <60%, (ii) >=60 to <70%, (iii) >=70 to <90%, and (iii) >=90% (Hint check out the substr() function in base R and the case_when() function from dplyr – see example below).
+
+chocolate <- chocolate %>%
+  mutate(cocoa_percent2 = as.numeric(gsub("%", "", cocoa_percent))) %>%
+  mutate(cocoa_percent_cat = case_when(
+    cocoa_percent2 <60 ~ "i",
+    cocoa_percent2 >=60 & cocoa_percent2 <70 ~ "ii",
+    cocoa_percent2>= 70 & cocoa_percent2 <90 ~ "iii",
+    cocoa_percent2>=90 ~ "iv",
+    .default=NA
+  ))
+
+
+chocolate %>%
+  select(cocoa_percent, cocoa_percent2, cocoa_percent_cat) %>%
+  slice_sample(n=25)
+table(chocolate$cocoa_percent_cat)
+
+#Using the new column described in #2, re-order the factor levels (if needed) to be starting with the smallest percentage group and increasing to the largest percentage group (Hint check out the fct_relevel() function from forcats).
+
+chocolate$cocoa_percent_cat <- factor(chocolate$cocoa_percent_cat, levels = c("i", "ii", "iii", "iv"))
+
+
+levels(chocolate$cocoa_percent_cat)
+
+
+#For each country, make a set of four side-by-side boxplots plotting the groups on the x-axis and the ratings on the y-axis. These plots should be faceted by country.
+
+
+chocolate %>%
+  ggplot(aes(x=cocoa_percent_cat, y=rating)) +
+  geom_boxplot() +
+  facet_wrap(~country_of_bean_origin)
+
+
+chocolate %>% group_by(cocoa_percent_cat) %>% summarise(mean=mean(rating,na.rm=TRUE))
+
+#On average, which category of chocolate percentage is most highly rated? Do these countries mostly agree or are there disagreements?
+
+```
+
+
+Solution: On average, category i is the higest rated
