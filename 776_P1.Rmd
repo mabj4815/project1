@@ -64,13 +64,21 @@ Solution: Changing the number of bins changes the total number of 'bars'. I pick
 
 #Consider the countries where the beans originated from. 
 
+#Table
 table(chocolate$country_of_bean_origin)
+
+#How many reviews come from each country of bean origin?
+
 
 ```
 
-Solution: I don't understand this prompt
+
+
 
 3.- What is average rating scores from reviews of chocolate bars that have Ecuador as country_of_bean_origin in this dataset? For this same set of reviews, also calculate (1) the total number of reviews and (2) the standard deviation of the rating scores. Your answer should be a new data frame with these three summary statistics in three columns. Label the name of these columns mean, sd, and total.
+Solution: Look at above table
+
+
 
 ```{r 1.3}
 
@@ -260,6 +268,134 @@ chocolate %>%
 
 ## **Part 3: Convert wide data into long data**
 
+We are going to create a set of features for us to plot over time. Use the functions in dplyr and tidyr to perform the following steps to the chocolate dataset:
+
+1.- Create a new set of columns titled beans, sugar, cocoa_butter, vanilla, letchin, and salt that contain a 1 or 0 representing whether or not that review for the chocolate bar contained that ingredient (1) or not (0).
+
+``` {r 3.1}
+
+chocolate <- readRDS(here("data", "chocolate.RDS"))
+
+
+chocolate$beans <- ifelse(grepl("B", chocolate$ingredients),1,0)
+chocolate$sugar <- ifelse(grepl("S", chocolate$ingredients),1,0)
+chocolate$cocoa_butter <- ifelse(grepl("C", chocolate$ingredients),1,0)
+chocolate$vanilla <- ifelse(grepl("V", chocolate$ingredients),1,0)
+chocolate$lecithin <- ifelse(grepl("L", chocolate$ingredients),1,0)
+chocolate$salt <- ifelse(grepl("Sa", chocolate$ingredients),1,0)
+
+
+chocolate %>%
+  select(ingredients, beans, sugar, cocoa_butter, vanilla, lecithin, salt) %>%
+  slice_sample(n=50)
+#looks good!
+
+
+```
+
+3.2 Create a new set of columns titled char_cocoa, char_sweet, char_nutty, char_creamy, char_roasty, char_earthy that contain a 1 or 0 representing whether or not that the most memorable characteristic for the chocolate bar had that word (1) or not (0). For example, if the word “sweet” appears in the most_memorable_characteristics, then record a 1, otherwise a 0 for that review in the char_sweet column (Hint: check out str_detect() from the stringr package).
+
+```{r 3.2}
+
+chocolate$char_cocoa <- str_detect(chocolate$most_memorable_characteristics, "cocoa")
+chocolate$char_sweet <- str_detect(chocolate$most_memorable_characteristics, "sweet")
+chocolate$char_nutty <- str_detect(chocolate$most_memorable_characteristics, "nutty")
+chocolate$char_creamy <- str_detect(chocolate$most_memorable_characteristics, "creamy")
+chocolate$char_roasty <- str_detect(chocolate$most_memorable_characteristics, "roasty")
+chocolate$char_earthy <- str_detect(chocolate$most_memorable_characteristics, "earthy")
+
+
+chocolate$char_cocoa <- ifelse(chocolate$char_cocoa==TRUE,1,0)
+chocolate$char_sweet <- ifelse(chocolate$char_sweet==TRUE,1,0)
+chocolate$char_nutty <- ifelse(chocolate$char_nutty==TRUE,1,0)
+chocolate$char_creamy <- ifelse(chocolate$char_creamy==TRUE,1,0)
+chocolate$char_roasty <- ifelse(chocolate$char_roasty==TRUE,1,0)
+chocolate$char_earthy <- ifelse(chocolate$char_earthy==TRUE,1,0)
+
+
+chocolate %>% 
+  select(most_memorable_characteristics, char_cocoa, char_sweet, char_nutty, char_roasty, char_earthy) %>%
+  slice_head(n=30)
+
+
+```
+
+For each year (i.e. review_date), calculate the mean value in each new column you created across all reviews for that year. (Hint: If all has gone well thus far, you should have a dataset with 16 rows and 13 columns).
+
+``` {r 3.3}
+
+chocolate_summary <- chocolate %>%
+  group_by(review_date) %>%
+  summarise(
+    mean_beans = mean(beans, na.rm = TRUE),
+    mean_sugar = mean(sugar, na.rm = TRUE),
+    mean_cocoa_butter = mean(cocoa_butter, na.rm = TRUE),
+    mean_vanilla = mean(vanilla, na.rm = TRUE),
+    mean_lecithin = mean(lecithin, na.rm = TRUE),
+    mean_salt = mean(salt, na.rm = TRUE),
+    mean_char_cocoa = mean(char_cocoa, na.rm = TRUE),
+    mean_char_sweet = mean(char_sweet, na.rm = TRUE),
+    mean_char_nutty = mean(char_nutty, na.rm = TRUE),
+    mean_char_creamy = mean(char_creamy, na.rm = TRUE),
+    mean_char_roasty = mean(char_roasty, na.rm = TRUE),
+    mean_char_earthy = mean(char_earthy, na.rm = TRUE)
+  )
+
+
+```
+
+Convert this wide dataset into a long dataset with a new feature and mean_score column.
+
+```{r 3.4}
+
+chocolate_long <- chocolate_summary %>%
+  pivot_longer(
+    cols = starts_with("mean_"),  
+    names_to = "feature",         
+    names_prefix = "mean_",       
+    values_to = "mean_score")
+
+head(chocolate_long)
+
+
+```
+
+Solution: See above 
+
+## **Part 4: Data visualization**
+
+Use the functions in ggplot2 package to make a scatter plot of the mean_scores (y-axis) over time (x-axis). There should be one plot (facet) for each feature. For full credit, your plot should include:
+
+An overall title for the plot and a subtitle summarizing key trends that you found. Also include a caption in the figure with your name.
+Both the observed points for the mean_score, but also a smoothed non-linear pattern of the trend
+All plots should be shown in the one figure
+There should be an informative x-axis and y-axis label
+
+```{r 4}
+
+
+
+chocolate_long %>%
+  ggplot(aes(x=review_date, y=mean_score)) +
+  geom_point()+
+  geom_smooth()+
+  facet_wrap(~feature) +
+  ggtitle("Plot of mean content of characteristics over time") +
+  labs(subtitle ="Mean % of chocolates with vanilla and lecithin has decreased over time",
+       caption = "Mateo Bandala Jacques", x="Year", y="Percentage")+
+  theme_minimal()
+
+
+
+
+
+
+
+```
+
+
+
+
 ## **Part 5: Make the worst plot you can**
 
 ```{r 5}
@@ -273,7 +409,7 @@ cat_fig <- rasterGrob(cat, width = unit(4, "cm"), height = unit(4, "cm"))
 
 
 ggplot(chocolate, aes(x = country_of_bean_origin, y = rating)) +
-  geom_point(size = 10, shape = 17, color = "purple", fill = "yellow", alpha = 0.9) +  
+  geom_point(size = 10, shape = 17, color = "purple", fill = "yellow", alpha = 0.1) +  
   theme(
     axis.title.x = element_text(size = 20, face = "italic", color = "cyan", angle = 180),  
     axis.title.y = element_text(size = 20, face = "bold", color = "blue", angle = 90),  
@@ -350,14 +486,6 @@ a + b
 ```
 
 
-```{r session info}
-library(sessioninfo)
-
-options(width = 120)
-sessioninfo::session_info()
-
-```
-
 How I improved the plot:
 
 -  I rotated and bolded the X axis ticks
@@ -367,3 +495,13 @@ How I improved the plot:
 -  I added a calming tropical beach to the background
 -  I added a title 
 -  I added black horizontal lines for ease of visualization
+
+
+
+```{r session info}
+library(sessioninfo)
+
+options(width = 120)
+sessioninfo::session_info()
+
+```
